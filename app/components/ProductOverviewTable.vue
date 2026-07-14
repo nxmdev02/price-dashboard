@@ -11,10 +11,9 @@ const comparison = (product: any) => {
   const lowest = lowestMapping(product)
   if (typeof product.ownPrice !== 'number' || !lowest) return null
   const difference = lowest.latestPrice - product.ownPrice
-  if (difference === 0) return { direction: 'same', label: '보합', difference: 0, percent: 0 }
+  if (difference === 0) return { direction: 'same', difference: 0, percent: 0 }
   return {
     direction: difference > 0 ? 'up' : 'down',
-    label: difference > 0 ? '상승' : '하락',
     difference: Math.abs(difference),
     percent: product.ownPrice ? Math.abs(difference / product.ownPrice * 100) : 0,
   }
@@ -30,7 +29,7 @@ const comparison = (product: any) => {
         <td><strong>{{ lowestMapping(product)?.companyName || '가격 미등록' }}</strong></td>
         <td class="product-title-cell">{{ lowestMapping(product)?.productName || '상품명 미등록' }}</td>
         <td class="right price">{{ money(lowestMapping(product)?.latestPrice) }}</td>
-        <td><span v-if="comparison(product)" class="market-compare" :class="comparison(product)?.direction"><b>{{ comparison(product)?.direction === 'up' ? '▲' : comparison(product)?.direction === 'down' ? '▼' : '−' }}</b><strong>{{ comparison(product)?.label }}</strong><small v-if="comparison(product)?.difference">{{ money(comparison(product)?.difference) }} · {{ comparison(product)?.percent.toFixed(1) }}%</small></span><span v-else class="market-compare unavailable" title="자사 가격 미등록">-</span></td>
+        <td><span v-if="comparison(product)" class="market-compare" :class="comparison(product)?.direction"><b>{{ comparison(product)?.direction === 'up' ? '▲' : comparison(product)?.direction === 'down' ? '▼' : '−' }}</b><strong v-if="comparison(product)?.direction === 'same'">보합</strong><small v-if="comparison(product)?.difference">{{ money(comparison(product)?.difference) }} · {{ comparison(product)?.percent.toFixed(1) }}%</small></span><span v-else class="market-compare unavailable" title="자사 가격 미등록">-</span></td>
         <td><a v-if="lowestMapping(product)?.productUrl" :href="lowestMapping(product).productUrl" target="_blank" rel="noopener" @click.stop>상품 보기 <ExternalLink :size="15"/></a><span v-else>-</span></td>
       </tr></tbody></table></div>
   </section>
