@@ -1,0 +1,13 @@
+modelCode,name,widthMm,depthMm,heightMm,doorType,doorCount,sidePanelTier,sidePanelIncluded,imageFilename,notes
+MODEL-003,W773 × D373 × H740 / 1× Drop-down Door,773,373,740,DROP_DOWN,1,,,model-003.png,MODEL-004와 동일 규격 - 구분 정보 대기
+MODEL-004,W773 × D373 × H740 / 1× Drop-down Door,773,373,740,DROP_DOWN,1,,,model-004.png,MODEL-003과 동일 규격 - 구분 정보 대기
+MODEL-005,W773 × D373 × H915 / 2× Drop-down Door,773,373,915,DROP_DOWN,2,3,false,model-005.png,3단 사이드 패널 없음
+MODEL-006,W1520 × D373 × H390 / 2× Drop-down Door,1520,373,390,DROP_DOWN,2,,,model-006.png,
+MODEL-007,W1523 × D373 × H740 / 2× Drop-down Door,1523,373,740,DROP_DOWN,2,,,model-007.png,
+MODEL-008,W1523 × D373 × H740 / 4× Drop-down Door,1523,373,740,DROP_DOWN,4,,,model-008.png,
+MODEL-009,W1523 × D373 × H915 / 4× Drop-down Door,1523,373,915,DROP_DOWN,4,,,model-009.png,
+MODEL-010,W2273 × D373 × H565 / 3× Drop-down Door,2273,373,565,DROP_DOWN,3,,,model-010.png,MODEL-012와 동일 규격 - 구분 정보 대기
+MODEL-011,W2273 × D373 × H490 / 3× Drop-down Door,2273,373,490,DROP_DOWN,3,,,model-011.png,
+MODEL-012,W2273 × D373 × H565 / 3× Drop-down Door,2273,373,565,DROP_DOWN,3,,,model-012.png,MODEL-010과 동일 규격 - 구분 정보 대기
+MODEL-013,W3023 × D373 × H390 / 4× Drop-down Door,3023,373,390,DROP_DOWN,4,,,model-013.png,
+MODEL-014,W1273 × D523 × H740 / 2× Drop-down Door,1273,523,740,DROP_DOWN,2,,,model-014.png,
