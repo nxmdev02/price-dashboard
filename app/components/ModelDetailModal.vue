@@ -12,6 +12,7 @@ const collectingOne = ref<string | null>(null)
 const collectionResults = ref<Record<string, any[]>>({})
 const historyPeriod = ref<'7' | '30' | '90' | 'all'>('30')
 const competitorSort = ref<'price-asc' | 'price-desc'>('price-asc')
+const competitorPage = ref(1)
 
 const sortedCompetitors = computed(() => {
   const competitors = [...(selected.value?.competitors || [])]
@@ -25,6 +26,7 @@ const sortedCompetitors = computed(() => {
       : b.latestPrice - a.latestPrice
   })
 })
+const paginatedCompetitors = computed(() => sortedCompetitors.value.slice((competitorPage.value - 1) * 10, competitorPage.value * 10))
 
 function rebuild() {
   const product = products.value.find(item => item.id === props.productId)
@@ -41,7 +43,8 @@ function rebuild() {
   }
 }
 
-watch(() => props.productId, () => { editingMapping.value = null; competitorSort.value = 'price-asc'; rebuild() }, { immediate: true })
+watch(() => props.productId, () => { editingMapping.value = null; competitorSort.value = 'price-asc'; competitorPage.value = 1; rebuild() }, { immediate: true })
+watch(competitorSort, () => { competitorPage.value = 1 })
 watch(products, rebuild, { deep: false })
 
 function generateMappingUrl(mapping: any) {
@@ -127,9 +130,9 @@ function historyPoints(mapping: any) {
           <div v-if="selected.competitors.some((mapping: any) => visibleHistory(mapping).length)" class="history-series"><div v-for="mapping in selected.competitors.filter((item: any) => visibleHistory(item).length)" :key="mapping.id"><strong>{{ mapping.companyName }}</strong><svg viewBox="0 0 240 56" preserveAspectRatio="none"><polyline :points="historyPoints(mapping)" fill="none" stroke="#6656ef" stroke-width="2"/></svg><span>{{ money(visibleHistory(mapping).at(-1)?.price) }}<small v-if="mapping.mappingHistories?.length">매핑 변경 {{ mapping.mappingHistories.length }}회</small></span></div></div>
           <div v-else class="empty-state small-empty">선택한 기간의 가격 이력이 없습니다.</div>
         </section>
-        <section class="competitor-summary"><div class="section-title competitor-title"><h3>경쟁사 가격 현황</h3><label>정렬<select v-model="competitorSort"><option value="price-asc">가격 낮은순</option><option value="price-desc">가격 높은순</option></select></label></div><div class="table-wrap"><table><thead><tr><th>경쟁사</th><th>현재 가격</th><th>배송비</th><th>최근 조회</th><th>상태</th><th>상품</th><th>관리</th></tr></thead><tbody>
-          <tr v-for="mapping in sortedCompetitors" :key="mapping.id"><td><strong>{{ mapping.companyName }}</strong></td><td class="price">{{ money(mapping.latestPrice) }}</td><td>{{ shippingText(mapping.shippingFee) }}</td><td>{{ formatDate(mapping.latestCheckedAt) }}</td><td><span class="status-pill" :class="statusClass(mapping.productUrl ? mapping.lastCollectionStatus : 'IDLE')">{{ mapping.productUrl ? statusText(mapping.lastCollectionStatus) : '미정' }}</span></td><td><a v-if="mapping.productUrl" :href="mapping.productUrl" target="_blank">상품 보기</a><span v-else>-</span></td><td><div class="table-actions"><button title="매핑 수정" @click="editingMapping = { ...mapping }"><Pencil :size="17"/></button><button title="개별 조회" :disabled="!mapping.productUrl || collectingOne === mapping.id" @click="collectOne(mapping)"><Play :size="17"/></button></div></td></tr>
-        </tbody></table></div></section>
+        <section class="competitor-summary"><div class="section-title competitor-title"><h3>경쟁사 가격 현황</h3><div class="price-sort-links"><button :class="{ active: competitorSort === 'price-asc' }" @click="competitorSort = 'price-asc'">낮은 가격순</button><span>·</span><button :class="{ active: competitorSort === 'price-desc' }" @click="competitorSort = 'price-desc'">높은 가격순</button></div></div><div class="table-wrap"><table><thead><tr><th>경쟁사</th><th>현재 가격</th><th>배송비</th><th>최근 조회</th><th>상태</th><th>상품</th><th>관리</th></tr></thead><tbody>
+          <tr v-for="mapping in paginatedCompetitors" :key="mapping.id"><td><strong>{{ mapping.companyName }}</strong></td><td class="price">{{ money(mapping.latestPrice) }}</td><td>{{ shippingText(mapping.shippingFee) }}</td><td>{{ formatDate(mapping.latestCheckedAt) }}</td><td><span class="status-pill" :class="statusClass(mapping.productUrl ? mapping.lastCollectionStatus : 'IDLE')">{{ mapping.productUrl ? statusText(mapping.lastCollectionStatus) : '미정' }}</span></td><td><a v-if="mapping.productUrl" :href="mapping.productUrl" target="_blank">상품 보기</a><span v-else>-</span></td><td><div class="table-actions"><button title="매핑 수정" @click="editingMapping = { ...mapping }"><Pencil :size="17"/></button><button title="개별 조회" :disabled="!mapping.productUrl || collectingOne === mapping.id" @click="collectOne(mapping)"><Play :size="17"/></button></div></td></tr>
+        </tbody></table></div><PaginationControls v-model:page="competitorPage" :total="sortedCompetitors.length"/></section>
       </template>
     </section>
   </div>
