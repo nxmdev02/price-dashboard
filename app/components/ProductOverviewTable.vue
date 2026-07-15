@@ -33,7 +33,7 @@ const comparison = (product: any) => {
         <td class="product-title-cell">{{ lowestMapping(product)?.productName || '상품명 미등록' }}</td>
         <td class="right price">{{ money(lowestMapping(product)?.latestPrice) }}</td>
         <td><span v-if="comparison(product)" class="market-compare" :class="comparison(product)?.direction"><b>{{ comparison(product)?.direction === 'up' ? '▲' : comparison(product)?.direction === 'down' ? '▼' : '−' }}</b><strong v-if="comparison(product)?.direction === 'same'">보합</strong><small v-if="comparison(product)?.difference">{{ money(comparison(product)?.difference) }} · {{ comparison(product)?.percent.toFixed(1) }}%</small></span><span v-else class="market-compare unavailable" title="자사 가격 미등록">-</span></td>
-        <td><a v-if="lowestMapping(product)?.productUrl" :href="lowestMapping(product).productUrl" target="_blank" rel="noopener" @click.stop>상품 보기 <ExternalLink :size="15"/></a><span v-else>-</span></td>
+        <td><a v-if="lowestMapping(product)?.productUrl" :href="lowestMapping(product).productUrl" target="_blank" rel="noopener" aria-label="상품 링크" title="상품 링크" @click.stop><ExternalLink :size="17"/></a><span v-else>-</span></td>
       </tr></tbody></table></div>
     <PaginationControls v-model:page="page" :total="rows.length"/>
   </section>
