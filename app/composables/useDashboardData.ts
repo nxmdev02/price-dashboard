@@ -60,8 +60,7 @@ export function useDashboardData() {
   }
 
   const load = async (force = false) => {
-    if (!force && products.value.length) { persist(); return }
-    if (!force && restore()) return
+    if (!force) restore()
     loading.value = true
     try {
       const data = await api<any>('/api/management')

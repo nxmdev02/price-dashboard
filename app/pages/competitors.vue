@@ -11,7 +11,7 @@ const deleteTarget = ref<any>(null)
 const deleting = ref(false)
 const companyForm = reactive<any>({ id: '', name: '', platform: '', baseUrl: '', defaultCollectionMethod: 'MANUAL', productUrlTemplate: '', enabled: true })
 const filteredCompanies = computed(() => companies.value.filter(company => `${company.name} ${company.id}`.toLowerCase().includes(query.value.toLowerCase())))
-const methodForPlatform = (platform: string) => platform === 'CAFE24' ? 'HTML_SELECTOR' : platform === 'OWN_MALL' ? 'JSON_LD' : 'MANUAL'
+const methodForPlatform = (platform: string) => platform === 'CAFE24' ? 'CAFE24_API' : platform === 'OWN_MALL' ? 'JSON_LD' : 'MANUAL'
 
 watch(() => companyForm.platform, value => { companyForm.defaultCollectionMethod = methodForPlatform(value) })
 function openCompany(company?: any) { editing.value = company || null; Object.assign(companyForm, company ? { ...company } : { id: '', name: '', platform: '', baseUrl: '', defaultCollectionMethod: 'MANUAL', productUrlTemplate: '', enabled: true }); modalOpen.value = true }

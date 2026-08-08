@@ -13,6 +13,7 @@ const collectionResults = ref<Record<string, any[]>>({})
 const historyPeriod = ref<'7' | '30' | '90' | 'all'>('30')
 const competitorSort = ref<'price-asc' | 'price-desc'>('price-asc')
 const competitorPage = ref(1)
+const openCollectionErrorId = ref<string | null>(null)
 
 const sortedCompetitors = computed(() => {
   const competitors = [...(selected.value?.competitors || [])]
@@ -43,7 +44,7 @@ function rebuild() {
   }
 }
 
-watch(() => props.productId, () => { editingMapping.value = null; competitorSort.value = 'price-asc'; competitorPage.value = 1; rebuild() }, { immediate: true })
+watch(() => props.productId, () => { editingMapping.value = null; openCollectionErrorId.value = null; competitorSort.value = 'price-asc'; competitorPage.value = 1; rebuild() }, { immediate: true })
 watch(competitorSort, () => { competitorPage.value = 1 })
 watch(products, rebuild, { deep: false })
 
@@ -89,24 +90,19 @@ async function collectOne(mapping: any) {
 }
 
 function visibleHistory(mapping: any) {
-  const cutoff = historyPeriod.value === 'all' ? 0 : Date.now() - Number(historyPeriod.value) * 86400000
-  return (mapping.priceHistories || []).filter((item: any) => new Date(item.changedAt).getTime() >= cutoff)
+  const history = mapping.priceHistories || []
+  if (historyPeriod.value === 'all' || !history.length) return history
+
+  const cutoff = Date.now() - Number(historyPeriod.value) * 86400000
+  const firstVisibleIndex = history.findIndex((item: any) => new Date(item.changedAt).getTime() >= cutoff)
+
+  // Include the last known price before the selected period so the first
+  // in-period change is drawn from its actual previous value.
+  if (firstVisibleIndex > 0) return history.slice(firstVisibleIndex - 1)
+  if (firstVisibleIndex === 0) return history
+  return history.slice(-1)
 }
 
-function historyPoints(mapping: any) {
-  const history = visibleHistory(mapping)
-  if (!history.length) return ''
-  const values = history.map((item: any) => item.price)
-  const min = Math.min(...values), max = Math.max(...values)
-  const y = (value: number) => max === min ? 28 : 50 - (value - min) / (max - min) * 42
-  if (history.length === 1) return `0,${y(values[0])} 240,${y(values[0])}`
-  let output = `0,${y(values[0])}`
-  for (let index = 1; index < history.length; index++) {
-    const x = index / (history.length - 1) * 240
-    output += ` ${x},${y(values[index - 1])} ${x},${y(values[index])}`
-  }
-  return output
-}
 </script>
 
 <template>
@@ -127,11 +123,11 @@ function historyPoints(mapping: any) {
         <div class="detail-head"><img :src="selected.imagePath" :alt="selected.modelCode"><div><h2>{{ selected.modelCode }}</h2><p>{{ selected.width }} × {{ selected.depth }} × {{ selected.height }} mm · 드롭다운 도어 {{ selected.doorCount }}개</p></div></div>
         <div v-if="collectionResults[selected.id]?.length" class="result-panel"><strong>최근 조회 결과</strong><span v-for="result in collectionResults[selected.id]" :key="result.companyId">{{ result.companyName }} · {{ statusText(result.status) }} · {{ money(result.price) }}</span></div>
         <section class="history-section"><div class="card-head"><div><h3>가격 변동 그래프</h3><p>변동 시점 기준 계단형 가격 추이</p></div><div class="periods"><button v-for="period in ['7', '30', '90', 'all']" :key="period" :class="{ active: historyPeriod === period }" @click="historyPeriod = period as any">{{ period === 'all' ? '전체' : period + '일' }}</button></div></div>
-          <div v-if="selected.competitors.some((mapping: any) => visibleHistory(mapping).length)" class="history-series"><div v-for="mapping in selected.competitors.filter((item: any) => visibleHistory(item).length)" :key="mapping.id"><strong>{{ mapping.companyName }}</strong><svg viewBox="0 0 240 56" preserveAspectRatio="none"><polyline :points="historyPoints(mapping)" fill="none" stroke="#6656ef" stroke-width="2"/></svg><span>{{ money(visibleHistory(mapping).at(-1)?.price) }}<small v-if="mapping.mappingHistories?.length">매핑 변경 {{ mapping.mappingHistories.length }}회</small></span></div></div>
+          <div v-if="selected.competitors.some((mapping: any) => visibleHistory(mapping).length)" class="history-series"><div v-for="mapping in selected.competitors.filter((item: any) => visibleHistory(item).length)" :key="mapping.id"><strong>{{ mapping.companyName }}</strong><PriceHistoryChart :histories="visibleHistory(mapping)"/><span>{{ money(visibleHistory(mapping).at(-1)?.price) }}<small v-if="mapping.mappingHistories?.length">매핑 변경 {{ mapping.mappingHistories.length }}회</small></span></div></div>
           <div v-else class="empty-state small-empty">선택한 기간의 가격 이력이 없습니다.</div>
         </section>
         <section class="competitor-summary"><div class="section-title competitor-title"><h3>경쟁사 가격 현황</h3><div class="price-sort-links"><button :class="{ active: competitorSort === 'price-asc' }" @click="competitorSort = 'price-asc'">낮은 가격순</button><span>·</span><button :class="{ active: competitorSort === 'price-desc' }" @click="competitorSort = 'price-desc'">높은 가격순</button></div></div><div class="table-wrap"><table><thead><tr><th>경쟁사</th><th>현재 가격</th><th>배송비</th><th>최근 조회</th><th>상태</th><th>상품 링크</th><th>관리</th></tr></thead><tbody>
-          <tr v-for="mapping in paginatedCompetitors" :key="mapping.id"><td><strong>{{ mapping.companyName }}</strong></td><td class="price">{{ money(mapping.latestPrice) }}</td><td>{{ shippingText(mapping.shippingFee) }}</td><td>{{ formatDate(mapping.latestCheckedAt) }}</td><td><span class="status-pill" :class="statusClass(mapping.productUrl ? mapping.lastCollectionStatus : 'IDLE')">{{ mapping.productUrl ? statusText(mapping.lastCollectionStatus) : '미정' }}</span></td><td><a v-if="mapping.productUrl" :href="mapping.productUrl" target="_blank" rel="noopener" aria-label="상품 링크" title="상품 링크"><ExternalLink :size="17"/></a><span v-else>-</span></td><td><div class="table-actions"><button title="매핑 수정" @click="editingMapping = { ...mapping }"><Pencil :size="17"/></button><button title="개별 조회" :disabled="!mapping.productUrl || collectingOne === mapping.id" @click="collectOne(mapping)"><Play :size="17"/></button></div></td></tr>
+          <tr v-for="mapping in paginatedCompetitors" :key="mapping.id"><td><strong>{{ mapping.companyName }}</strong></td><td class="price">{{ money(mapping.latestPrice) }}</td><td>{{ shippingText(mapping.shippingFee) }}</td><td>{{ formatDate(mapping.latestCheckedAt) }}</td><td class="collection-status-cell"><button v-if="mapping.productUrl && mapping.lastCollectionError" class="status-pill status-detail-button" :class="statusClass(mapping.lastCollectionStatus)" :aria-expanded="openCollectionErrorId === mapping.id" title="실패 사유 확인" @click="openCollectionErrorId = openCollectionErrorId === mapping.id ? null : mapping.id">{{ statusText(mapping.lastCollectionStatus) }}</button><span v-else class="status-pill" :class="statusClass(mapping.productUrl ? mapping.lastCollectionStatus : 'IDLE')">{{ mapping.productUrl ? statusText(mapping.lastCollectionStatus) : '미정' }}</span><div v-if="openCollectionErrorId === mapping.id && mapping.lastCollectionError" class="collection-error-message" role="alert">{{ mapping.lastCollectionError }}</div></td><td><a v-if="mapping.productUrl" :href="mapping.productUrl" target="_blank" rel="noopener" aria-label="상품 링크" title="상품 링크"><ExternalLink :size="17"/></a><span v-else>-</span></td><td><div class="table-actions"><button title="매핑 수정" @click="editingMapping = { ...mapping }"><Pencil :size="17"/></button><button title="개별 조회" :disabled="!mapping.productUrl || collectingOne === mapping.id" @click="collectOne(mapping)"><Play :size="17"/></button></div></td></tr>
         </tbody></table></div><PaginationControls v-model:page="competitorPage" :total="sortedCompetitors.length"/></section>
       </template>
     </section>

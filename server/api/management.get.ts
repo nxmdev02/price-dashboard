@@ -12,7 +12,20 @@ export default defineEventHandler(async (event) => {
   const companies = companySnap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: iso(d.get('createdAt')), updatedAt: iso(d.get('updatedAt')) }))
   const products = await Promise.all(productSnap.docs.map(async d => {
     const mappings = await d.ref.collection('competitors').get()
-    return { id: d.id, ...d.data(), createdAt: iso(d.get('createdAt')), updatedAt: iso(d.get('updatedAt')), competitors: mappings.docs.map(m => ({ id: m.id, ...m.data(), latestCheckedAt: iso(m.get('latestCheckedAt')), latestChangedAt: iso(m.get('latestChangedAt')) })) }
+    const competitors = await Promise.all(mappings.docs.map(async m => {
+      const [priceHistorySnap, mappingHistorySnap] = await Promise.all([
+        m.ref.collection('priceHistories').orderBy('changedAt', 'asc').get(),
+        m.ref.collection('mappingHistories').orderBy('changedAt', 'asc').get(),
+      ])
+      const priceHistories = priceHistorySnap.docs.map(history => ({
+        id: history.id, ...history.data(), changedAt: iso(history.get('changedAt')), createdAt: iso(history.get('createdAt')),
+      }))
+      const mappingHistories = mappingHistorySnap.docs.map(history => ({
+        id: history.id, ...history.data(), changedAt: iso(history.get('changedAt')),
+      }))
+      return { id: m.id, ...m.data(), latestCheckedAt: iso(m.get('latestCheckedAt')), latestChangedAt: iso(m.get('latestChangedAt')), priceHistories, mappingHistories }
+    }))
+    return { id: d.id, ...d.data(), createdAt: iso(d.get('createdAt')), updatedAt: iso(d.get('updatedAt')), competitors }
   }))
   products.sort((a: any, b: any) => String(a.modelCode).localeCompare(String(b.modelCode), 'en', { numeric: true }))
 
